@@ -10,6 +10,8 @@
 
 #define YYGeoIP_IP              @"ip"
 #define YYGeoIP_COUNTRY_CODE    @"country"
+#define YYGeoIP_POSTAL_CODE     @"postalcode"
+#define YYGeoIP_COUNTY          @"county"
 #define YYGeoIP_CITY            @"city"
 #define YYGeoIP_LONGITUDE       @"longitude"
 #define YYGeoIP_LATITUDE        @"latitude"
@@ -23,5 +25,8 @@
 + (NSDictionary *)query_ipinfo_io;
 + (NSDictionary *)query_ip_api_com;
 + (NSDictionary *)query_www_geoplugin_net;
+
++ (NSDictionary *)queryGPSViaMapsWithLatitude:(float)latitude longitude:(float)longitude;
++ (NSDictionary *)queryGPSWithLatitude:(float)latitude longitude:(float)longitude;
 
 @end

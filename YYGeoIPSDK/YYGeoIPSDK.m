@@ -50,6 +50,7 @@
 {
     //NSLog(@"query: %@", url);
     id jsonObject = [[self class] parseJsonObj:[[self class] query:[NSURL URLWithString:url]]];
+    //NSLog(@"jsonObject: %@", jsonObject);
     if (jsonObject) {
         NSMutableDictionary *output = [[NSMutableDictionary alloc] init];
         //NSLog(@"jsonObject: %@", jsonObject);
@@ -96,6 +97,89 @@
                                       @{YYGeoIP_KEY_INOUT:@"lat", YYGeoIP_KEY_OUTUPT:YYGeoIP_LATITUDE},
                                       @{YYGeoIP_KEY_INOUT:@"lon", YYGeoIP_KEY_OUTUPT:YYGeoIP_LONGITUDE},
                                       ]];
+}
+
++ (NSDictionary *)queryGPSViaMapsWithLatitude:(float)latitude longitude:(float)longitude {
+    NSMutableDictionary *output = [[NSMutableDictionary alloc] init];
+    
+    id ret = [[self class] parseJsonObj:[[self class] query:[NSURL URLWithString:[NSString stringWithFormat:@"http://maps.googleapis.com/maps/api/geocode/json?latlng=%f,%f&sensor=true", latitude, longitude]]]];
+    
+    NSString *country = nil, *county = nil, *city = nil, *postal_code = nil;
+    if (ret && [ret isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *raw = (NSDictionary *)ret;
+        if ([raw[@"status"] isEqualToString:@"OK"] && raw[@"results"]  && [raw[@"results"] isKindOfClass:[NSArray class]]) {
+            for (id raw_item in raw[@"results"] ) {
+                if ([raw_item isKindOfClass:[NSDictionary class]]) {
+                    NSDictionary *item = (NSDictionary *)raw_item;
+                    if (item[@"address_components"] && [item[@"address_components"] isKindOfClass:[NSArray class]]) {
+                        for (id raw_meta in item[@"address_components"]) {
+                            if ([raw_meta isKindOfClass:[NSDictionary class]]) {
+                                NSDictionary *meta = (NSDictionary *)raw_meta;
+                                //NSLog(@"meta: %@", meta);
+                                if (meta[@"types"] && [meta[@"types"] count] >= 2) {
+                                    @try {
+                                        if ([meta[@"types"][0] isEqualToString:@"country"]) {
+                                            country = meta[@"short_name"];
+                                        } else if ([meta[@"types"][0] isEqualToString:@"administrative_area_level_2"]) {
+                                            county = meta[@"short_name"];
+                                        } else if ([meta[@"types"][0] isEqualToString:@"administrative_area_level_3"]) {
+                                            city = meta[@"short_name"];
+                                        } else if ([meta[@"types"][0] isEqualToString:@"postal_code"]) {
+                                            postal_code = meta[@"short_name"];
+                                        }
+                                    }
+                                    @catch (NSException *exception) {
+                                    }
+                                    @finally {
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if (city && county && country) {
+
+                    break;
+                }
+            }
+        }
+    }
+    if (country)
+        output[YYGeoIP_COUNTRY_CODE] = country;
+
+    if (postal_code)
+        output[YYGeoIP_POSTAL_CODE] = postal_code;
+    if (city) {
+        output[YYGeoIP_CITY] = city;
+        output[YYGeoIP_LOCATION] = city;
+    }
+    if (county) {
+        output[YYGeoIP_COUNTY] = county;
+        output[YYGeoIP_LOCATION] = county; // use county first
+    }
+    output[YYGeoIP_LATITUDE] = [NSString stringWithFormat:@"%f", latitude];
+    output[YYGeoIP_LONGITUDE] = [NSString stringWithFormat:@"%f", longitude];
+
+    return output;
+}
+
++ (NSDictionary *)queryGPSWithLatitude:(float)latitude longitude:(float)longitude
+{
+    switch (arc4random()%1) {
+        case 0:
+            return [[self class] queryGPSViaMapsWithLatitude:latitude longitude:longitude];
+    }
+    return @{};
+}
+
++ (void)asyncQuery:(float)latitude longitude:(float)longitude callback:(void (^)(NSDictionary *ret))callback
+{
+    dispatch_async(dispatch_queue_create("gpsquery", NULL), ^{
+        if (callback) {
+            callback([[self class] queryGPSWithLatitude:latitude longitude:longitude]);
+        }
+    });
 }
 
 + (NSDictionary *)query
