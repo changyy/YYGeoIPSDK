@@ -120,7 +120,7 @@
                                     @try {
                                         if ([meta[@"types"][0] isEqualToString:@"country"]) {
                                             country = meta[@"short_name"];
-                                        } else if ([meta[@"types"][0] isEqualToString:@"administrative_area_level_2"]) {
+                                        } else if ([meta[@"types"][0] isEqualToString:@"administrative_area_level_1"] || [meta[@"types"][0] isEqualToString:@"administrative_area_level_2"]) {
                                             county = meta[@"short_name"];
                                         } else if ([meta[@"types"][0] isEqualToString:@"administrative_area_level_3"]) {
                                             city = meta[@"short_name"];
